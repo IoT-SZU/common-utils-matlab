@@ -6,7 +6,7 @@ function [ peakBeg, peakEnd ] = seg_var( data, fs )
 
     % Config
     len = length(data);     % 信号总长度
-    signalLen = 0.3 * fs;   % 单个信号长度
+    signalLen = 0.4 * fs;   % 单个信号长度
     DEBUG = true;           % 是否画图
     THRESHOLD = 0.006;
     MIN_LEN = floor(signalLen * 0.3);
@@ -20,7 +20,7 @@ function [ peakBeg, peakEnd ] = seg_var( data, fs )
     highlightX = [];
     highlightY = [];
     lastDiffValue = sum(diff(absData(1:signalLen)));
-    for i=signalLen + 1 : len
+    for i=signalLen + 1 : len - signalLen
         frameData = absData(i - signalLen:i);
         currentDiffValue = lastDiffValue - (absData(i - signalLen + 1) - absData(i - signalLen)) + (absData(i) - absData(i - 1));
         values(i) = abs(currentDiffValue / signalLen) / max(frameData);
@@ -31,7 +31,7 @@ function [ peakBeg, peakEnd ] = seg_var( data, fs )
             m = i - lessCount;
             b = m - signalLen;
             e = m + signalLen;
-            if lessCount >= MIN_LEN && sum(data(b:m) .^ 2) / sum(data(m:e) .^ 2) > 6
+            if lessCount >= MIN_LEN && sum(data(b:m) .^ 2) / sum(data(m:e) .^ 2) > 2
                 highlightX = [highlightX, m:i];
                 highlightY = [highlightY, data(m:i)];
                 peakBeg = [peakBeg, b];
@@ -39,6 +39,17 @@ function [ peakBeg, peakEnd ] = seg_var( data, fs )
             end
             lessCount = 0;
         end
+    end
+
+    % 判断最后一个是否是一个信号
+    m = i - lessCount;
+    b = m - signalLen;
+    e = m + signalLen;
+    if lessCount >= MIN_LEN && sum(data(b:m) .^ 2) / sum(data(m:e) .^ 2) > 2
+        highlightX = [highlightX, m:i];
+        highlightY = [highlightY, data(m:i)];
+        peakBeg = [peakBeg, b];
+        peakEnd = [peakEnd, e];
     end
 
     % 画图
@@ -62,6 +73,7 @@ function [ peakBeg, peakEnd ] = seg_var( data, fs )
         subplot(2, 1, 2);
         hold on;
         plot(values);
+        plot([1, len], [THRESHOLD, THRESHOLD], 'r');
     end
 end
 
